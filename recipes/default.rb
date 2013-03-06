@@ -90,6 +90,21 @@ execute "tar" do
   command "tar zxvf #{Chef::Config[:file_cache_path]}/#{tarball}"
 end
 
+# grab the zookeeper nodes that are currently available
+zookeeper_pairs = Array.new
+if not Chef::Config.solo
+  search(:node, "role:zookeeper AND chef_environment:#{node.chef_environment}").each do |n|
+    zookeeper_pairs << n[:fqdn]
+  end
+end
+
+# append the zookeeper client port (defaults to 2181)
+i = 0
+while i < zookeeper_pairs.size do
+  zookeeper_pairs[i] = zookeeper_pairs[i].concat(":#{node[:zookeeper][:client_port]}")
+  i += 1
+end
+
 execute "chmod" do
   command "find #{install_dir} -name bin -prune -o -type f -exec chmod 644 {} \\; && find #{install_dir} -type d -exec chmod 755 {} \\;"
   action :run
